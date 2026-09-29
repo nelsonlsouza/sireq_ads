@@ -35,7 +35,7 @@ function render(){
  document.querySelector('#cancelar')?.addEventListener('click',()=>acao(()=>sireq.cancelarProxima(prompt('Motivo do cancelamento:')??''),'Requisição cancelada.'));
  document.querySelectorAll<HTMLButtonElement>('[data-decisao]').forEach(b=>b.addEventListener('click',()=>acao(()=>sireq.decidir(b.dataset.decisao as 'APROVADA'|'REJEITADA'|'DEVOLVIDA',document.querySelector<HTMLTextAreaElement>('#motivo')?.value??''),'Decisão registrada.')));
 }
-document.querySelector<HTMLFormElement>('#form')!.addEventListener('submit',(e)=>{e.preventDefault();const form=e.currentTarget;const f=new FormData(form);acao(()=>sireq.cadastrar({setor:String(f.get('setor')),requisitante:String(f.get('requisitante')),tipo:String(f.get('tipo')) as TipoRequisicao,descricao:String(f.get('descricao')),justificativa:String(f.get('justificativa')),valor:Number(f.get('valor'))}),'Requisição cadastrada no final da fila.');form.reset();});
+document.querySelector<HTMLFormElement>('#form')!.addEventListener('submit',(e)=>{e.preventDefault();const form=e.currentTarget as HTMLFormElement;const f=new FormData(form);acao(()=>sireq.cadastrar({setor:String(f.get('setor')),requisitante:String(f.get('requisitante')),tipo:String(f.get('tipo')) as TipoRequisicao,descricao:String(f.get('descricao')),justificativa:String(f.get('justificativa')),valor:Number(f.get('valor'))}),'Requisição cadastrada no final da fila.');form.reset();});
 document.querySelector('#desfazer')!.addEventListener('click',()=>acao(()=>sireq.desfazerUltima(),'Última operação desfeita.'));
 document.querySelector('#limpar')!.addEventListener('click',()=>{if(confirm('Limpar todos os dados?')){sireq.limpar();render();msg('Dados removidos.')}});
 render();
