@@ -22,6 +22,15 @@ app.innerHTML = `
 const msg=(texto:string,erro=false)=>{const el=document.querySelector('#mensagem')!;el.innerHTML=`<div class="msg ${erro?'erro':''}">${texto}</div>`;setTimeout(()=>el.innerHTML='',3000)};
 const moeda=(v:number)=>v.toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const data=(v:string)=>new Date(v).toLocaleString('pt-BR');
+const detalhes=(r: import('./models/Requisicao').Requisicao)=>{
+ const e=r.dadosEspecificos??{}; const linhas:string[]=[];
+ if(r.tipo==='MATERIAL') linhas.push(`Item: ${e.item||'-'}`,`Quantidade: ${e.quantidade||'-'}`,`Valor unitário: ${moeda(e.valorUnitario||0)}`);
+ if(r.tipo==='SERVICO') linhas.push(`Fornecedor: ${e.fornecedor||'-'}`,`Período: ${e.periodo||'-'}`);
+ if(r.tipo==='VIAGEM') linhas.push(`Destino: ${e.destino||'-'}`,`Período: ${e.periodo||'-'}`,`Finalidade: ${e.finalidade||'-'}`);
+ if(r.tipo==='SOFTWARE') linhas.push(`Software: ${e.software||'-'}`,`Licenças: ${e.licencas||'-'}`,`Período: ${e.periodo||'-'}`);
+ if(r.tipo==='OUTROS') linhas.push(`Detalhes: ${e.descricaoDetalhada||'-'}`);
+ return linhas.map(x=>`<span>${x}</span>`).join('');
+};
 function acao(fn:()=>unknown,sucesso:string){try{fn();msg(sucesso);render()}catch(e){msg(e instanceof Error?e.message:'Erro inesperado.',true)}}
 
 function render(){
@@ -29,8 +38,8 @@ function render(){
  document.querySelector('#qtd')!.textContent=String(pend.length);document.querySelector('#histQtd')!.textContent=String(hist.length);document.querySelector('#filaInfo')!.textContent=`${pend.length} aguardando`;
  document.querySelector('#fila')!.innerHTML=pend.length?pend.map((r,i)=>`<div class="row"><span class="position">#${i+1}</span><div><b>${r.id}</b><small>${r.setor} • ${r.tipo} • ${r.requisitante}</small></div><strong>${moeda(r.valor)}</strong></div>`).join(''):'<p class="empty">Nenhuma requisição pendente.</p>';
  const alvo=atual??sireq.proxima();
- document.querySelector('#analise')!.innerHTML=alvo?`<div class="focus"><small>${atual?'EM ANÁLISE':'PRÓXIMA DA FILA'}</small><h3>${alvo.descricao}</h3><p><b>${alvo.id}</b> • ${alvo.setor} • ${alvo.requisitante}</p><p>${alvo.justificativa}</p><strong>${moeda(alvo.valor)}</strong></div>${atual?`<label>Motivo (rejeição/devolução)<textarea id="motivo"></textarea></label><div class="actions"><button data-decisao="APROVADA">Aprovar</button><button data-decisao="DEVOLVIDA" class="warning">Devolver</button><button data-decisao="REJEITADA" class="danger">Rejeitar</button></div>`:`<div class="actions"><button id="iniciar">Iniciar análise</button><button id="cancelar" class="danger ghost">Cancelar próxima</button></div>`}`:'<p class="empty">A fila está vazia.</p>';
- document.querySelector('#historico')!.innerHTML=hist.length?hist.map(h=>`<div class="row"><div><b>${h.acao}</b><small>${h.requisicaoId} • ${data(h.dataHora)}${h.motivo?' • '+h.motivo:''}</small></div><span class="badge">${h.novoStatus}</span></div>`).join(''):'<p class="empty">Nenhuma decisão registrada.</p>';
+ document.querySelector('#analise')!.innerHTML=alvo?`<div class="focus"><small>${atual?'EM ANÁLISE':'PRÓXIMA DA FILA'}</small><h3>${alvo.descricao}</h3><p><b>${alvo.id}</b> • ${alvo.setor} • ${alvo.requisitante}</p><p>${alvo.justificativa}</p><div class="detail-list">${detalhes(alvo)}</div><div class="meta"><span>Cadastrada em ${data(alvo.criadoEm)}</span><strong>${moeda(alvo.valor)}</strong></div></div>${atual?`<label>Motivo (rejeição/devolução)<textarea id="motivo"></textarea></label><div class="actions"><button data-decisao="APROVADA">Aprovar</button><button data-decisao="DEVOLVIDA" class="warning">Devolver</button><button data-decisao="REJEITADA" class="danger">Rejeitar</button></div>`:`<div class="actions"><button id="iniciar">Iniciar análise</button><button id="cancelar" class="danger ghost">Cancelar próxima</button></div>`}`:'<p class="empty">A fila está vazia.</p>';
+ document.querySelector('#historico')!.innerHTML=hist.length?hist.map(h=>`<div class="history-row"><div class="history-top"><div><b>${h.requisicaoId} · ${h.acao}</b><small>${h.requisicaoAnterior.setor} • ${h.requisicaoAnterior.tipo} • ${h.requisicaoAnterior.requisitante}</small></div><span class="badge">${h.novoStatus}</span></div><div class="history-body"><span><b>Descrição:</b> ${h.requisicaoAnterior.descricao}</span><span><b>Justificativa:</b> ${h.requisicaoAnterior.justificativa}</span><div class="detail-list">${detalhes(h.requisicaoAnterior)}</div><div class="meta"><span>Decisão em ${data(h.dataHora)}${h.motivo?' • Motivo: '+h.motivo:''}</span><strong>${moeda(h.requisicaoAnterior.valor)}</strong></div></div></div>`).join(''):'<p class="empty">Nenhuma decisão registrada.</p>';
  document.querySelector('#iniciar')?.addEventListener('click',()=>acao(()=>sireq.iniciarAnalise(),'Requisição encaminhada para análise.'));
  document.querySelector('#cancelar')?.addEventListener('click',()=>acao(()=>sireq.cancelarProxima(prompt('Motivo do cancelamento:')??''),'Requisição cancelada.'));
  document.querySelectorAll<HTMLButtonElement>('[data-decisao]').forEach(b=>b.addEventListener('click',()=>acao(()=>sireq.decidir(b.dataset.decisao as 'APROVADA'|'REJEITADA'|'DEVOLVIDA',document.querySelector<HTMLTextAreaElement>('#motivo')?.value??''),'Decisão registrada.')));
