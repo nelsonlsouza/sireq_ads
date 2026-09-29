@@ -8,13 +8,13 @@ const app = document.querySelector<HTMLDivElement>('#app')!;
 app.innerHTML = `
 <header><div><strong>SIREQ</strong><span>Sistema Inteligente de Requisições e Aprovações</span></div><button id="limpar" class="ghost">Limpar dados</button></header>
 <main>
-<section class="hero"><div><p class="eyebrow">MVP acadêmico • FIFO + LIFO</p><h1>Controle de requisições simples e rastreável.</h1><p>Cadastre despesas, respeite a ordem de chegada e registre cada decisão.</p></div><div class="stats"><article><b id="qtd">0</b><span>Pendentes</span></article><article><b id="histQtd">0</b><span>Decisões</span></article></div></section>
+<section class="hero"><div><p class="eyebrow">Sistema de requisições</p><h1>Controle de requisições simples e rastreável.</h1><p>Cadastre despesas, respeite a ordem de chegada e registre cada decisão.</p></div><div class="stats"><article><b id="qtd">0</b><span>Pendentes</span></article><article><b id="histQtd">0</b><span>Decisões</span></article></div></section>
 <div id="mensagem"></div>
 <section class="grid"><article class="card"><h2>Nova requisição</h2><form id="form">
 <label>Setor<input name="setor" required placeholder="Ex.: TI"></label><label>Requisitante<input name="requisitante" required></label>
 <div class="two"><label>Tipo<select name="tipo"><option>MATERIAL</option><option>SERVICO</option><option>VIAGEM</option><option>SOFTWARE</option><option>OUTROS</option></select></label><label>Valor (R$)<input name="valor" type="number" min="0" step="0.01" required></label></div>
 <label>Descrição<input name="descricao" required></label><label>Justificativa<textarea name="justificativa" required></textarea></label><button type="submit">Cadastrar e enfileirar</button></form></article>
-<article class="card"><div class="title-row"><h2>Próxima análise</h2><span class="badge">FIFO</span></div><div id="analise"></div></article></section>
+<article class="card"><div class="title-row"><h2>Próxima análise</h2><span class="badge">Ordem de chegada</span></div><div id="analise"></div></article></section>
 <section class="card wide"><div class="title-row"><h2>Fila de análise</h2><span id="filaInfo"></span></div><div id="fila"></div></section>
 <section class="card wide"><div class="title-row"><h2>Histórico</h2><button id="desfazer" class="ghost">Desfazer última</button></div><div id="historico"></div></section>
 </main>`;
