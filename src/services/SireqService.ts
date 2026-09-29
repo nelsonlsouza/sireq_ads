@@ -18,7 +18,7 @@ export class SireqService {
     const erros = ValidadorService.validar(dados);
     if (erros.length) throw new Error(erros.join(' '));
     const requisicao: Requisicao = {
-      ...dados, id: 'REQ-' + Date.now().toString(36).toUpperCase(),
+      ...dados, id: this.proximoId(),
       status: 'PENDENTE', criadoEm: new Date().toISOString()
     };
     this.fila.enfileirar(requisicao); this.salvar(); return requisicao;
@@ -69,6 +69,19 @@ export class SireqService {
   }
 
   limpar(): void { this.fila.carregar([]); this.historico.carregar([]); this.emAnalise=null; StorageService.limpar(); }
+
+  private proximoId(): string {
+    const ids = [
+      ...this.fila.listar().map((r) => r.id),
+      ...this.historico.listar().map((h) => h.requisicaoId),
+      ...(this.emAnalise ? [this.emAnalise.id] : [])
+    ];
+    const maior = ids.reduce((max, id) => {
+      const numero = Number(id.replace('REQ-', ''));
+      return Number.isFinite(numero) ? Math.max(max, numero) : max;
+    }, 0);
+    return `REQ-${String(maior + 1).padStart(4, '0')}`;
+  }
 
   private salvar(): void {
     StorageService.salvar('sireq_fila', this.fila.listar());
