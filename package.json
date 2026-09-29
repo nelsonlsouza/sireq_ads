@@ -1,1 +1,21 @@
-{"name":"sireq_ads","private":true,"version":"1.0.0","type":"module","scripts":{"dev":"vite","build":"tsc && vite build","test":"vitest run","test:watch":"vitest","preview":"vite preview"},"devDependencies":{"typescript":"~6.0.2","vite":"^8.3.0","vitest":"^5.0.2"}}
+{
+  "name": "sireq_ads",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "preview": "vite preview",
+    "format": "prettier --write . && prettier --write --parser html \"public/*.svg\" \"src/assets/*.svg\"",
+    "format:check": "prettier --check . && prettier --check --parser html \"public/*.svg\" \"src/assets/*.svg\""
+  },
+  "devDependencies": {
+    "prettier": "^3.9.9",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vitest": "^5.0.2"
+  }
+}

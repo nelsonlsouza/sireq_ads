@@ -4,6 +4,14 @@ Aplicação web acadêmica para cadastro, organização, análise e rastreabilid
 
 > **Versão atual:** MVP web sem backend e sem banco de dados. A persistência é feita no `localStorage` do navegador.
 
+## Entrega de requisitos e SQA
+
+- [Especificação de requisitos atualizada](documentacao/SIREQ_Especificacao_Requisitos_Atualizada.docx)
+- [Plano e relatório de SQA](documentacao/SIREQ_Plano_e_Relatorio_SQA.docx)
+- [Registro de implementação e catálogo dos 17 testes](documentacao/SIREQ_Implementacao_e_Catalogo_de_Testes.md)
+
+Em 29/09/2026, `npm test` passou com 17 testes e `npm run build` concluiu sem erros. A execução manual em navegador e o aceite pelo responsável continuam pendentes, conforme o relatório SQA. Para executar localmente: `npm install`, `npm test`, `npm run build` e `npm run dev`.
+
 ## Finalidade
 
 O SIREQ organiza solicitações de materiais, serviços, viagens, softwares e outros gastos. Requisições válidas entram no final da fila e são analisadas na ordem de chegada. As decisões são registradas no histórico, permitindo consultar e desfazer a última operação válida.
@@ -42,17 +50,20 @@ O sistema foi construído para apoiar a apresentação acadêmica, a documentaç
 - Desfazer última operação registrada
 - Persistência local da fila, histórico e requisição em análise
 - Tratamento de fila e pilha vazias
+- Correção e reenvio de solicitações devolvidas ao final da fila
+- Busca de requisições por ID
+- Identificadores sem reutilização após desfazimento
 - Interface responsiva
 
 ## Campos por tipo
 
-| Tipo | Dados específicos |
-| --- | --- |
-| Material | Item, quantidade e valor unitário |
-| Serviço | Descrição, fornecedor e período |
-| Viagem | Destino, período e finalidade |
+| Tipo     | Dados específicos                                  |
+| -------- | -------------------------------------------------- |
+| Material | Item, quantidade, unidade e valor unitário         |
+| Serviço  | Descrição, fornecedor e período                    |
+| Viagem   | Destino, período e finalidade                      |
 | Software | Nome do software, quantidade de licenças e período |
-| Outros | Descrição detalhada |
+| Outros   | Descrição detalhada                                |
 
 Todos os tipos também possuem setor, requisitante, descrição, justificativa e valor estimado.
 
@@ -63,6 +74,7 @@ Todos os tipos também possuem setor, requisitante, descrição, justificativa e
 A fila segue **First In, First Out**. A primeira requisição válida cadastrada deve ser a primeira disponibilizada para análise.
 
 Operações implementadas:
+
 - enfileirar;
 - consultar a frente;
 - desenfileirar;
@@ -74,6 +86,7 @@ Operações implementadas:
 O histórico utiliza uma pilha **Last In, First Out**. A operação registrada mais recentemente fica no topo e é a primeira considerada no desfazimento.
 
 Operações implementadas:
+
 - empilhar;
 - consultar topo;
 - desempilhar;
@@ -186,6 +199,7 @@ O objetivo desta etapa é verificar requisitos funcionais, estruturas de dados, 
 Antes de uma bateria independente, clique em **Limpar dados**. Para testes de persistência, não limpe os dados entre as etapas.
 
 Registre para cada caso:
+
 - resultado obtido;
 - status **PASSOU** ou **FALHOU**;
 - evidência (print, saída do terminal ou descrição objetiva);
@@ -193,35 +207,35 @@ Registre para cada caso:
 
 ## Casos de teste
 
-| ID | Cenário | Procedimento resumido | Resultado esperado |
-| --- | --- | --- | --- |
-| CT01 | Cadastro válido | Preencher todos os campos válidos | Gera ID, data/hora, status pendente e entra no fim da fila |
-| CT02 | Cadastro inválido | Deixar campo obrigatório vazio ou justificativa abaixo de 20 caracteres | Cadastro bloqueado e erro apresentado |
-| CT03 | FIFO | Cadastrar A, B e C nessa ordem | Fila permanece A → B → C |
-| CT04 | Consulta sem remoção | Observar próxima solicitação | A continua na fila até iniciar análise |
-| CT05 | Iniciar análise | Com A → B → C, iniciar análise | A sai da fila; B passa a ser a próxima |
-| CT06 | Aprovação | Iniciar análise e aprovar | Decisão registrada e requisição finalizada |
-| CT07 | Rejeição | Rejeitar informando motivo | Rejeição e motivo registrados |
-| CT08 | Devolução | Devolver informando motivo | Devolução e motivo registrados |
-| CT09 | Cancelamento | Cancelar solicitação pendente informando justificativa | Cancelamento registrado sem interromper o sistema |
-| CT10 | Histórico LIFO | Realizar decisões A, B e C | Operação C aparece como a mais recente |
-| CT11 | Desfazer | Executar uma decisão e clicar em “Desfazer última” | Última operação é removida e solicitação é restaurada |
-| CT12 | Vários desfazimentos | Realizar várias decisões e desfazê-las sucessivamente | Operações são revertidas da mais recente para a mais antiga |
-| CT13 | Desfazer sem histórico | Limpar dados e tentar desfazer | Sistema informa que não há operação e não quebra |
-| CT14 | Persistência | Cadastrar/decidir, recarregar a página | Estado permanece disponível |
-| CT15 | Estruturas vazias | Operar com fila/histórico vazios | Sistema trata a condição sem crash |
+| ID   | Cenário                | Procedimento resumido                                                   | Resultado esperado                                          |
+| ---- | ---------------------- | ----------------------------------------------------------------------- | ----------------------------------------------------------- |
+| CT01 | Cadastro válido        | Preencher todos os campos válidos                                       | Gera ID, data/hora, status pendente e entra no fim da fila  |
+| CT02 | Cadastro inválido      | Deixar campo obrigatório vazio ou justificativa abaixo de 20 caracteres | Cadastro bloqueado e erro apresentado                       |
+| CT03 | FIFO                   | Cadastrar A, B e C nessa ordem                                          | Fila permanece A → B → C                                    |
+| CT04 | Consulta sem remoção   | Observar próxima solicitação                                            | A continua na fila até iniciar análise                      |
+| CT05 | Iniciar análise        | Com A → B → C, iniciar análise                                          | A sai da fila; B passa a ser a próxima                      |
+| CT06 | Aprovação              | Iniciar análise e aprovar                                               | Decisão registrada e requisição finalizada                  |
+| CT07 | Rejeição               | Rejeitar informando motivo                                              | Rejeição e motivo registrados                               |
+| CT08 | Devolução              | Devolver informando motivo                                              | Devolução e motivo registrados                              |
+| CT09 | Cancelamento           | Cancelar solicitação pendente informando justificativa                  | Cancelamento registrado sem interromper o sistema           |
+| CT10 | Histórico LIFO         | Realizar decisões A, B e C                                              | Operação C aparece como a mais recente                      |
+| CT11 | Desfazer               | Executar uma decisão e clicar em “Desfazer última”                      | Última operação é removida e solicitação é restaurada       |
+| CT12 | Vários desfazimentos   | Realizar várias decisões e desfazê-las sucessivamente                   | Operações são revertidas da mais recente para a mais antiga |
+| CT13 | Desfazer sem histórico | Limpar dados e tentar desfazer                                          | Sistema informa que não há operação e não quebra            |
+| CT14 | Persistência           | Cadastrar/decidir, recarregar a página                                  | Estado permanece disponível                                 |
+| CT15 | Estruturas vazias      | Operar com fila/histórico vazios                                        | Sistema trata a condição sem crash                          |
 
 ## Testes adicionais por tipo
 
 Além dos CT01–CT15, validar pelo menos um cadastro de cada categoria:
 
-| Tipo | Verificar |
-| --- | --- |
+| Tipo     | Verificar                                             |
+| -------- | ----------------------------------------------------- |
 | Material | item, quantidade e valor unitário aparecem na análise |
-| Serviço | fornecedor e período aparecem na análise |
-| Viagem | destino, período e finalidade aparecem na análise |
-| Software | nome, licenças e período aparecem na análise |
-| Outros | descrição detalhada aparece na análise |
+| Serviço  | fornecedor e período aparecem na análise              |
+| Viagem   | destino, período e finalidade aparecem na análise     |
+| Software | nome, licenças e período aparecem na análise          |
+| Outros   | descrição detalhada aparece na análise                |
 
 Após uma decisão, confirmar que os mesmos dados permanecem visíveis no **Histórico**.
 
@@ -248,6 +262,7 @@ tests/
 ```
 
 Prioridades:
+
 1. validação dos campos gerais;
 2. validação específica de cada tipo;
 3. cadastro e FIFO;
@@ -261,6 +276,7 @@ Prioridades:
 ## Critério de conclusão da etapa de testes
 
 A etapa deve ser considerada concluída quando:
+
 - todos os casos planejados tiverem resultado registrado;
 - falhas encontradas estiverem documentadas;
 - testes automatizados executarem sem erro;
@@ -338,6 +354,7 @@ npm run dev
 ## Observações de escopo
 
 Este é um MVP local. Não fazem parte desta versão:
+
 - autenticação;
 - API/backend;
 - banco de dados remoto;

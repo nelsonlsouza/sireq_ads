@@ -1,8 +1,10 @@
 export type TipoRequisicao = 'MATERIAL' | 'SERVICO' | 'VIAGEM' | 'SOFTWARE' | 'OUTROS';
-export type StatusRequisicao = 'PENDENTE' | 'EM_ANALISE' | 'APROVADA' | 'REJEITADA' | 'DEVOLVIDA' | 'CANCELADA';
+export type StatusRequisicao =
+  'PENDENTE' | 'EM_ANALISE' | 'APROVADA' | 'REJEITADA' | 'DEVOLVIDA' | 'CANCELADA';
 
 export interface DadosEspecificos {
   item?: string;
+  unidade?: string;
   quantidade?: number;
   valorUnitario?: number;
   fornecedor?: string;
