@@ -1,52 +1,78 @@
-/**
- * FILA = FIFO (First In, First Out)
+/*
+ * FILA - FIFO
+ * First In, First Out = Primeiro a Entrar, Primeiro a Sair.
  *
- * Exemplo:
- * entra A -> entra B -> entra C
- * sai A   -> depois B -> depois C
+ * Exemplo visual:
  *
- * No SIREQ, a fila garante que as requisições sejam analisadas
- * na mesma ordem em que foram cadastradas.
+ * ENTRADA -> [ A ] [ B ] [ C ] -> SAÍDA
+ *                                  ^
+ *                                  A sai primeiro
+ *
+ * No SIREQ:
+ * A = primeira requisição cadastrada
+ * B = segunda requisição cadastrada
+ * C = terceira requisição cadastrada
+ *
+ * Portanto, A obrigatoriamente será analisada antes de B e C.
  */
 export class Fila<T> {
+  /*
+   * O <T> significa que a fila pode guardar qualquer tipo de dado.
+   * No SIREQ, usamos Fila<Requisicao>.
+   */
   private itens: T[] = [];
 
-  // Adiciona um novo item no FINAL da fila.
+  /*
+   * ENFILEIRAR
+   * push() adiciona no FINAL do array.
+   */
   enfileirar(item: T): void {
     this.itens.push(item);
   }
 
-  // Remove e devolve o PRIMEIRO item da fila.
+  /*
+   * DESENFILEIRAR
+   * shift() remove o PRIMEIRO elemento.
+   * É esta operação que produz o comportamento FIFO.
+   */
   desenfileirar(): T | undefined {
     return this.itens.shift();
   }
 
-  // Consulta o primeiro item sem removê-lo.
+  /*
+   * Consulta quem é o primeiro da fila SEM remover.
+   */
   frente(): T | undefined {
     return this.itens[0];
   }
 
-  // Informa se a fila está vazia.
   vazia(): boolean {
     return this.itens.length === 0;
   }
 
-  // Informa quantos itens existem na fila.
   quantidade(): number {
     return this.itens.length;
   }
 
-  // Retorna uma cópia para impedir alterações diretas na fila.
+  /*
+   * Retorna uma cópia da fila.
+   * Assim, quem recebe a lista não altera o array interno diretamente.
+   */
   listar(): T[] {
     return [...this.itens];
   }
 
-  // Restaura a fila a partir de dados salvos.
+  /*
+   * Usado quando os dados são recuperados do localStorage.
+   */
   carregar(itens: T[]): void {
     this.itens = [...itens];
   }
 
-  // Usado no desfazer para restaurar a última requisição tratada.
+  /*
+   * Usado pelo recurso "desfazer".
+   * A requisição restaurada volta para a frente da fila.
+   */
   inserirNoInicio(item: T): void {
     this.itens.unshift(item);
   }
