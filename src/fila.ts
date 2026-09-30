@@ -1,47 +1,19 @@
-/*
- * FILA - FIFO
- * First In, First Out = Primeiro a Entrar, Primeiro a Sair.
- *
- * Exemplo visual:
- *
- * ENTRADA -> [ A ] [ B ] [ C ] -> SAÍDA
- *                                  ^
- *                                  A sai primeiro
- *
- * No SIREQ:
- * A = primeira requisição cadastrada
- * B = segunda requisição cadastrada
- * C = terceira requisição cadastrada
- *
- * Portanto, A obrigatoriamente será analisada antes de B e C.
- */
+// Fila FIFO: o primeiro item que entra é o primeiro que sai.
+// No SIREQ, isso mantém as requisições na ordem em que foram cadastradas.
 export class Fila<T> {
-  /*
-   * O <T> significa que a fila pode guardar qualquer tipo de dado.
-   * No SIREQ, usamos Fila<Requisicao>.
-   */
   private itens: T[] = [];
 
-  /*
-   * ENFILEIRAR
-   * push() adiciona no FINAL do array.
-   */
+  // Coloca um item no final da fila.
   enfileirar(item: T): void {
     this.itens.push(item);
   }
 
-  /*
-   * DESENFILEIRAR
-   * shift() remove o PRIMEIRO elemento.
-   * É esta operação que produz o comportamento FIFO.
-   */
+  // Retira o primeiro item da fila.
   desenfileirar(): T | undefined {
     return this.itens.shift();
   }
 
-  /*
-   * Consulta quem é o primeiro da fila SEM remover.
-   */
+  // Consulta o primeiro item sem retirar.
   frente(): T | undefined {
     return this.itens[0];
   }
@@ -54,25 +26,17 @@ export class Fila<T> {
     return this.itens.length;
   }
 
-  /*
-   * Retorna uma cópia da fila.
-   * Assim, quem recebe a lista não altera o array interno diretamente.
-   */
+  // Retorna uma cópia para não alterar a fila diretamente fora da classe.
   listar(): T[] {
     return [...this.itens];
   }
 
-  /*
-   * Usado quando os dados são recuperados do localStorage.
-   */
+  // Recarrega os itens que foram salvos.
   carregar(itens: T[]): void {
     this.itens = [...itens];
   }
 
-  /*
-   * Usado pelo recurso "desfazer".
-   * A requisição restaurada volta para a frente da fila.
-   */
+  // Usado quando uma operação é desfeita.
   inserirNoInicio(item: T): void {
     this.itens.unshift(item);
   }
