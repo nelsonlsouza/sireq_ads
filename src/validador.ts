@@ -2,15 +2,11 @@ import type { Requisicao } from './tipos';
 
 type NovaRequisicao = Omit<Requisicao, 'id' | 'status' | 'criadoEm'>;
 
-/**
- * Concentra as validações do formulário.
- * Retorna uma lista de erros; lista vazia significa dados válidos.
- */
+// Faz as validações antes de uma requisição entrar na fila.
 export class Validador {
   static validar(dados: NovaRequisicao): string[] {
     const erros: string[] = [];
 
-    // 1. Campos comuns a qualquer tipo de requisição.
     if (!dados.setor.trim()) {
       erros.push('Setor é obrigatório.');
     }
@@ -31,16 +27,18 @@ export class Validador {
       erros.push('Valor deve ser válido.');
     }
 
-    // 2. Campos que mudam conforme o tipo escolhido.
     const especificos = dados.dadosEspecificos;
 
+    // Cada tipo possui alguns campos próprios.
     if (dados.tipo === 'MATERIAL') {
       if (!especificos.item?.trim()) {
         erros.push('Informe o item do material.');
       }
+
       if (!especificos.quantidade || especificos.quantidade <= 0) {
         erros.push('Informe uma quantidade válida.');
       }
+
       if (
         especificos.valorUnitario === undefined ||
         especificos.valorUnitario < 0
@@ -53,6 +51,7 @@ export class Validador {
       if (!especificos.fornecedor?.trim()) {
         erros.push('Informe o fornecedor.');
       }
+
       if (!especificos.periodo?.trim()) {
         erros.push('Informe o período do serviço.');
       }
@@ -62,9 +61,11 @@ export class Validador {
       if (!especificos.destino?.trim()) {
         erros.push('Informe o destino.');
       }
+
       if (!especificos.periodo?.trim()) {
         erros.push('Informe o período da viagem.');
       }
+
       if (!especificos.finalidade?.trim()) {
         erros.push('Informe a finalidade da viagem.');
       }
@@ -74,9 +75,11 @@ export class Validador {
       if (!especificos.software?.trim()) {
         erros.push('Informe o nome do software.');
       }
+
       if (!especificos.licencas || especificos.licencas <= 0) {
         erros.push('Informe a quantidade de licenças.');
       }
+
       if (!especificos.periodo?.trim()) {
         erros.push('Informe o período da licença.');
       }
