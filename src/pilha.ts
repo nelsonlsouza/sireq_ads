@@ -1,27 +1,42 @@
-/**
- * PILHA = LIFO (Last In, First Out)
+/*
+ * PILHA - LIFO
+ * Last In, First Out = Último a Entrar, Primeiro a Sair.
  *
- * Exemplo:
- * empilha A -> empilha B -> empilha C
- * sai C     -> depois B   -> depois A
+ * Exemplo visual:
  *
- * No SIREQ, a pilha registra as decisões.
- * Assim, a decisão mais recente é a primeira que pode ser desfeita.
+ *      [ C ] <- topo
+ *      [ B ]
+ *      [ A ]
+ *
+ * C foi a última operação registrada.
+ * Portanto, C será a primeira operação removida ao desfazer.
  */
 export class Pilha<T> {
+  /*
+   * No SIREQ, usamos Pilha<OperacaoHistorico>.
+   */
   private itens: T[] = [];
 
-  // Coloca um item no TOPO da pilha.
+  /*
+   * EMPILHAR
+   * push() coloca uma nova operação no TOPO da pilha.
+   */
   empilhar(item: T): void {
     this.itens.push(item);
   }
 
-  // Remove e devolve o item do TOPO.
+  /*
+   * DESEMPILHAR
+   * pop() remove a operação que está no TOPO.
+   * É esta operação que produz o comportamento LIFO.
+   */
   desempilhar(): T | undefined {
     return this.itens.pop();
   }
 
-  // Consulta o topo sem remover.
+  /*
+   * Consulta o topo sem remover.
+   */
   consultarTopo(): T | undefined {
     return this.itens[this.itens.length - 1];
   }
@@ -34,17 +49,23 @@ export class Pilha<T> {
     return this.itens.length;
   }
 
-  // Mostra primeiro a operação mais recente.
+  /*
+   * Para exibição, mostramos primeiro a operação mais recente.
+   */
   listar(): T[] {
     return [...this.itens].reverse();
   }
 
-  // Restaura a pilha a partir de dados salvos.
+  /*
+   * Recupera a pilha salva no localStorage.
+   */
   carregar(itens: T[]): void {
     this.itens = [...itens];
   }
 
-  // Usado apenas para salvar a ordem real da pilha.
+  /*
+   * Retorna a ordem interna original para persistência.
+   */
   listarOrdemInterna(): T[] {
     return [...this.itens];
   }
