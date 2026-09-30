@@ -1,15 +1,11 @@
-// Nomes usados no localStorage.
-// Centralizar as chaves evita textos repetidos e erros de digitação.
+// Chaves usadas para salvar os dados do sistema no navegador.
 export const CHAVES_STORAGE = {
   fila: 'sireq_fila',
   historico: 'sireq_historico',
   emAnalise: 'sireq_em_analise'
 } as const;
 
-/**
- * Responsável SOMENTE por salvar, carregar e apagar dados locais.
- * A regra de negócio não precisa conhecer detalhes do localStorage.
- */
+// Centraliza o acesso ao localStorage.
 export class Armazenamento {
   static salvar<T>(chave: string, valor: T): void {
     localStorage.setItem(chave, JSON.stringify(valor));
@@ -25,8 +21,7 @@ export class Armazenamento {
     try {
       return JSON.parse(dado) as T;
     } catch {
-      // Se houver dado inválido, o sistema volta ao valor padrão
-      // em vez de interromper a aplicação.
+      // Se o dado salvo estiver inválido, usamos o valor padrão.
       return valorPadrao;
     }
   }
