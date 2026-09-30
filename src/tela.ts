@@ -6,22 +6,19 @@ import type {
 } from './tipos';
 import type { Sireq } from './sireq';
 
-/**
- * Tudo que aparece na tela fica neste arquivo.
- *
- * Regra simples para explicar:
- * - sireq.ts = regras do sistema
- * - tela.ts  = interface que o usuário vê
- */
-
-// -------------------- HTML PRINCIPAL --------------------
+// Este arquivo cuida apenas da interface.
+// As regras do sistema continuam em sireq.ts.
 
 const HTML_PRINCIPAL = `
 <header>
   <div class="brand">
     <div class="brand-mark">S</div>
-    <div><strong>SIREQ</strong><span>Requisições e aprovações</span></div>
+    <div>
+      <strong>SIREQ</strong>
+      <span>Requisições e aprovações</span>
+    </div>
   </div>
+
   <button id="limpar" class="text-button">Limpar dados</button>
 </header>
 
@@ -32,6 +29,7 @@ const HTML_PRINCIPAL = `
       <h1>Requisições</h1>
       <p>Acompanhe solicitações, análises e decisões em um só lugar.</p>
     </div>
+
     <div class="stats">
       <article><span>Pendentes</span><b id="qtd">0</b></article>
       <article><span>Decisões</span><b id="histQtd">0</b></article>
@@ -43,12 +41,22 @@ const HTML_PRINCIPAL = `
   <section class="grid">
     <article class="card">
       <div class="card-head">
-        <div><h2>Nova requisição</h2><p>Preencha os dados da solicitação.</p></div>
+        <div>
+          <h2>Nova requisição</h2>
+          <p>Preencha os dados da solicitação.</p>
+        </div>
       </div>
 
       <form id="form">
-        <label>Setor<input name="setor" required placeholder="Ex.: TI"></label>
-        <label>Requisitante<input name="requisitante" required></label>
+        <label>
+          Setor
+          <input name="setor" required placeholder="Ex.: TI">
+        </label>
+
+        <label>
+          Requisitante
+          <input name="requisitante" required>
+        </label>
 
         <div class="two">
           <label>
@@ -68,7 +76,11 @@ const HTML_PRINCIPAL = `
           </label>
         </div>
 
-        <label>Descrição<input name="descricao" required></label>
+        <label>
+          Descrição
+          <input name="descricao" required>
+        </label>
+
         <div id="camposEspecificos"></div>
 
         <label>
@@ -82,47 +94,80 @@ const HTML_PRINCIPAL = `
 
     <article class="card">
       <div class="card-head title-row">
-        <div><h2>Análise</h2><p>Próxima solicitação aguardando decisão.</p></div>
+        <div>
+          <h2>Análise</h2>
+          <p>Próxima solicitação aguardando decisão.</p>
+        </div>
         <span class="status-neutral">Pendente</span>
       </div>
+
       <div id="analise"></div>
     </article>
   </section>
 
   <section class="card wide">
     <div class="card-head title-row">
-      <div><h2>Solicitações pendentes</h2><p>Organizadas por ordem de entrada.</p></div>
+      <div>
+        <h2>Solicitações pendentes</h2>
+        <p>Organizadas por ordem de entrada.</p>
+      </div>
       <span id="filaInfo" class="counter"></span>
     </div>
+
     <div id="fila"></div>
   </section>
 
   <section class="card wide">
     <div class="card-head title-row">
-      <div><h2>Histórico</h2><p>Registro das decisões realizadas.</p></div>
+      <div>
+        <h2>Histórico</h2>
+        <p>Registro das decisões realizadas.</p>
+      </div>
       <button id="desfazer" class="secondary">Desfazer última</button>
     </div>
+
     <div id="historico"></div>
   </section>
 </main>
 `;
 
-// -------------------- CAMPOS POR TIPO --------------------
-
 const CAMPOS_POR_TIPO: Record<TipoRequisicao, string> = {
-  MATERIAL:
-    '<div class="specific"><div class="two"><label>Item<input name="item" required></label><label>Quantidade<input name="quantidade" type="number" min="1" required></label></div><label>Valor unitário (R$)<input name="valorUnitario" type="number" min="0" step="0.01" required></label></div>',
-  SERVICO:
-    '<div class="specific"><label>Fornecedor<input name="fornecedor" required></label><label>Período<input name="periodo" required placeholder="Ex.: 01/10/2026 a 15/10/2026"></label></div>',
-  VIAGEM:
-    '<div class="specific"><label>Destino<input name="destino" required></label><label>Período<input name="periodo" required placeholder="Ex.: 10/10/2026 a 14/10/2026"></label><label>Finalidade<input name="finalidade" required></label></div>',
-  SOFTWARE:
-    '<div class="specific"><label>Nome do software<input name="software" required></label><div class="two"><label>Licenças<input name="licencas" type="number" min="1" required></label><label>Período<input name="periodo" required placeholder="Ex.: 12 meses"></label></div></div>',
-  OUTROS:
-    '<div class="specific"><label>Descrição detalhada<textarea name="descricaoDetalhada" required></textarea></label></div>'
-};
+  MATERIAL: `
+    <div class="specific">
+      <div class="two">
+        <label>Item<input name="item" required></label>
+        <label>Quantidade<input name="quantidade" type="number" min="1" required></label>
+      </div>
+      <label>Valor unitário (R$)<input name="valorUnitario" type="number" min="0" step="0.01" required></label>
+    </div>`,
 
-// -------------------- FUNÇÕES AUXILIARES --------------------
+  SERVICO: `
+    <div class="specific">
+      <label>Fornecedor<input name="fornecedor" required></label>
+      <label>Período<input name="periodo" required placeholder="Ex.: 01/10/2026 a 15/10/2026"></label>
+    </div>`,
+
+  VIAGEM: `
+    <div class="specific">
+      <label>Destino<input name="destino" required></label>
+      <label>Período<input name="periodo" required placeholder="Ex.: 10/10/2026 a 14/10/2026"></label>
+      <label>Finalidade<input name="finalidade" required></label>
+    </div>`,
+
+  SOFTWARE: `
+    <div class="specific">
+      <label>Nome do software<input name="software" required></label>
+      <div class="two">
+        <label>Licenças<input name="licencas" type="number" min="1" required></label>
+        <label>Período<input name="periodo" required placeholder="Ex.: 12 meses"></label>
+      </div>
+    </div>`,
+
+  OUTROS: `
+    <div class="specific">
+      <label>Descrição detalhada<textarea name="descricaoDetalhada" required></textarea></label>
+    </div>`
+};
 
 function moeda(valor: number): string {
   return valor.toLocaleString('pt-BR', {
@@ -135,7 +180,7 @@ function data(valor: string): string {
   return new Date(valor).toLocaleString('pt-BR');
 }
 
-// Evita que texto digitado pelo usuário seja interpretado como HTML.
+// Evita que um texto digitado no formulário seja interpretado como HTML.
 function textoSeguro(valor: unknown): string {
   return String(valor ?? '')
     .replaceAll('&', '&amp;')
@@ -146,42 +191,42 @@ function textoSeguro(valor: unknown): string {
 }
 
 function detalhes(requisicao: Requisicao): string {
-  const e = requisicao.dadosEspecificos ?? {};
+  const dados = requisicao.dadosEspecificos;
   const linhas: string[] = [];
 
   if (requisicao.tipo === 'MATERIAL') {
     linhas.push(
-      `Item: ${textoSeguro(e.item || '-')}`,
-      `Quantidade: ${textoSeguro(e.quantidade || '-')}`,
-      `Valor unitário: ${moeda(e.valorUnitario || 0)}`
+      `Item: ${textoSeguro(dados.item || '-')}`,
+      `Quantidade: ${textoSeguro(dados.quantidade || '-')}`,
+      `Valor unitário: ${moeda(dados.valorUnitario || 0)}`
     );
   }
 
   if (requisicao.tipo === 'SERVICO') {
     linhas.push(
-      `Fornecedor: ${textoSeguro(e.fornecedor || '-')}`,
-      `Período: ${textoSeguro(e.periodo || '-')}`
+      `Fornecedor: ${textoSeguro(dados.fornecedor || '-')}`,
+      `Período: ${textoSeguro(dados.periodo || '-')}`
     );
   }
 
   if (requisicao.tipo === 'VIAGEM') {
     linhas.push(
-      `Destino: ${textoSeguro(e.destino || '-')}`,
-      `Período: ${textoSeguro(e.periodo || '-')}`,
-      `Finalidade: ${textoSeguro(e.finalidade || '-')}`
+      `Destino: ${textoSeguro(dados.destino || '-')}`,
+      `Período: ${textoSeguro(dados.periodo || '-')}`,
+      `Finalidade: ${textoSeguro(dados.finalidade || '-')}`
     );
   }
 
   if (requisicao.tipo === 'SOFTWARE') {
     linhas.push(
-      `Software: ${textoSeguro(e.software || '-')}`,
-      `Licenças: ${textoSeguro(e.licencas || '-')}`,
-      `Período: ${textoSeguro(e.periodo || '-')}`
+      `Software: ${textoSeguro(dados.software || '-')}`,
+      `Licenças: ${textoSeguro(dados.licencas || '-')}`,
+      `Período: ${textoSeguro(dados.periodo || '-')}`
     );
   }
 
   if (requisicao.tipo === 'OUTROS') {
-    linhas.push(`Detalhes: ${textoSeguro(e.descricaoDetalhada || '-')}`);
+    linhas.push(`Detalhes: ${textoSeguro(dados.descricaoDetalhada || '-')}`);
   }
 
   return linhas.map((linha) => `<span>${linha}</span>`).join('');
@@ -202,14 +247,12 @@ function lerDadosEspecificos(form: FormData): DadosEspecificos {
   };
 }
 
-// -------------------- INICIALIZAÇÃO DA TELA --------------------
-
 export function iniciarTela(sireq: Sireq): void {
   const app = document.querySelector<HTMLDivElement>('#app')!;
   app.innerHTML = HTML_PRINCIPAL;
 
-  const tipoSelect = document.querySelector<HTMLSelectElement>('#tipo')!;
   const formulario = document.querySelector<HTMLFormElement>('#form')!;
+  const tipoSelect = document.querySelector<HTMLSelectElement>('#tipo')!;
 
   function mostrarMensagem(mensagem: string, erro = false): void {
     const elemento = document.querySelector('#mensagem')!;
@@ -222,11 +265,10 @@ export function iniciarTela(sireq: Sireq): void {
     }, 3000);
   }
 
-  // Executa uma ação e mostra erro amigável caso alguma regra impeça a operação.
-  function executar(acao: () => unknown, sucesso: string): void {
+  function executar(acao: () => unknown, mensagem: string): void {
     try {
       acao();
-      mostrarMensagem(sucesso);
+      mostrarMensagem(mensagem);
       renderizar();
     } catch (erro) {
       mostrarMensagem(
@@ -238,8 +280,8 @@ export function iniciarTela(sireq: Sireq): void {
 
   function renderizarCampos(): void {
     const tipo = tipoSelect.value as TipoRequisicao;
-    document.querySelector<HTMLDivElement>('#camposEspecificos')!.innerHTML =
-      CAMPOS_POR_TIPO[tipo];
+    const campos = document.querySelector<HTMLDivElement>('#camposEspecificos')!;
+    campos.innerHTML = CAMPOS_POR_TIPO[tipo];
   }
 
   function renderizar(): void {
@@ -252,8 +294,7 @@ export function iniciarTela(sireq: Sireq): void {
     renderizarAnalise(atual ?? sireq.proxima(), Boolean(atual));
     renderizarHistorico(historico);
 
-    // Os botões da análise são recriados no HTML.
-    // Por isso os eventos deles precisam ser ligados novamente.
+    // A área de análise é recriada a cada atualização.
     configurarBotoesDaAnalise();
   }
 
@@ -277,15 +318,19 @@ export function iniciarTela(sireq: Sireq): void {
 
     elemento.innerHTML = pendentes
       .map(
-        (r, indice) => `
-        <div class="row">
-          <span class="position">#${indice + 1}</span>
-          <div>
-            <b>${textoSeguro(r.id)}</b>
-            <small>${textoSeguro(r.setor)} • ${textoSeguro(r.tipo)} • ${textoSeguro(r.requisitante)}</small>
-          </div>
-          <strong>${moeda(r.valor)}</strong>
-        </div>`
+        (requisicao, indice) => `
+          <div class="row">
+            <span class="position">#${indice + 1}</span>
+            <div>
+              <b>${textoSeguro(requisicao.id)}</b>
+              <small>
+                ${textoSeguro(requisicao.setor)} •
+                ${textoSeguro(requisicao.tipo)} •
+                ${textoSeguro(requisicao.requisitante)}
+              </small>
+            </div>
+            <strong>${moeda(requisicao.valor)}</strong>
+          </div>`
       )
       .join('');
   }
@@ -302,29 +347,45 @@ export function iniciarTela(sireq: Sireq): void {
     }
 
     const botoes = emAnalise
-      ? `<label>Motivo (rejeição/devolução)<textarea id="motivo"></textarea></label>
-         <div class="actions">
-           <button data-decisao="APROVADA">Aprovar</button>
-           <button data-decisao="DEVOLVIDA" class="warning">Devolver</button>
-           <button data-decisao="REJEITADA" class="danger">Rejeitar</button>
-         </div>`
-      : `<div class="actions">
-           <button id="iniciar">Iniciar análise</button>
-           <button id="cancelar" class="danger ghost">Cancelar próxima</button>
-         </div>`;
+      ? `
+        <label>
+          Motivo (rejeição/devolução)
+          <textarea id="motivo"></textarea>
+        </label>
+        <div class="actions">
+          <button data-decisao="APROVADA">Aprovar</button>
+          <button data-decisao="DEVOLVIDA" class="warning">Devolver</button>
+          <button data-decisao="REJEITADA" class="danger">Rejeitar</button>
+        </div>`
+      : `
+        <div class="actions">
+          <button id="iniciar">Iniciar análise</button>
+          <button id="cancelar" class="danger ghost">Cancelar próxima</button>
+        </div>`;
 
     elemento.innerHTML = `
       <div class="focus">
         <small>${emAnalise ? 'EM ANÁLISE' : 'PRÓXIMA DA FILA'}</small>
         <h3>${textoSeguro(requisicao.descricao)}</h3>
-        <p><b>${textoSeguro(requisicao.id)}</b> • ${textoSeguro(requisicao.setor)} • ${textoSeguro(requisicao.requisitante)}</p>
+
+        <p>
+          <b>${textoSeguro(requisicao.id)}</b> •
+          ${textoSeguro(requisicao.setor)} •
+          ${textoSeguro(requisicao.requisitante)}
+        </p>
+
         <p>${textoSeguro(requisicao.justificativa)}</p>
-        <div class="detail-list">${detalhes(requisicao)}</div>
+
+        <div class="detail-list">
+          ${detalhes(requisicao)}
+        </div>
+
         <div class="meta">
           <span>Cadastrada em ${data(requisicao.criadoEm)}</span>
           <strong>${moeda(requisicao.valor)}</strong>
         </div>
       </div>
+
       ${botoes}`;
   }
 
@@ -338,7 +399,8 @@ export function iniciarTela(sireq: Sireq): void {
 
     elemento.innerHTML = historico
       .map((operacao) => {
-        const r = operacao.requisicaoAnterior;
+        const requisicao = operacao.requisicaoAnterior;
+
         const motivo = operacao.motivo
           ? ` • Motivo: ${textoSeguro(operacao.motivo)}`
           : '';
@@ -347,27 +409,47 @@ export function iniciarTela(sireq: Sireq): void {
           <div class="history-row">
             <div class="history-top">
               <div>
-                <b>${textoSeguro(operacao.requisicaoId)} · ${textoSeguro(operacao.acao)}</b>
-                <small>${textoSeguro(r.setor)} • ${textoSeguro(r.tipo)} • ${textoSeguro(r.requisitante)}</small>
+                <b>
+                  ${textoSeguro(operacao.requisicaoId)} ·
+                  ${textoSeguro(operacao.acao)}
+                </b>
+
+                <small>
+                  ${textoSeguro(requisicao.setor)} •
+                  ${textoSeguro(requisicao.tipo)} •
+                  ${textoSeguro(requisicao.requisitante)}
+                </small>
               </div>
-              <span class="badge">${textoSeguro(operacao.novoStatus)}</span>
+
+              <span class="badge">
+                ${textoSeguro(operacao.novoStatus)}
+              </span>
             </div>
 
             <div class="history-body">
-              <span><b>Descrição:</b> ${textoSeguro(r.descricao)}</span>
-              <span><b>Justificativa:</b> ${textoSeguro(r.justificativa)}</span>
-              <div class="detail-list">${detalhes(r)}</div>
+              <span>
+                <b>Descrição:</b> ${textoSeguro(requisicao.descricao)}
+              </span>
+
+              <span>
+                <b>Justificativa:</b> ${textoSeguro(requisicao.justificativa)}
+              </span>
+
+              <div class="detail-list">
+                ${detalhes(requisicao)}
+              </div>
+
               <div class="meta">
-                <span>Decisão em ${data(operacao.dataHora)}${motivo}</span>
-                <strong>${moeda(r.valor)}</strong>
+                <span>
+                  Decisão em ${data(operacao.dataHora)}${motivo}
+                </span>
+                <strong>${moeda(requisicao.valor)}</strong>
               </div>
             </div>
           </div>`;
       })
       .join('');
   }
-
-  // -------------------- EVENTOS --------------------
 
   function configurarBotoesDaAnalise(): void {
     document.querySelector('#iniciar')?.addEventListener('click', () => {
@@ -379,7 +461,11 @@ export function iniciarTela(sireq: Sireq): void {
 
     document.querySelector('#cancelar')?.addEventListener('click', () => {
       const motivo = prompt('Motivo do cancelamento:') ?? '';
-      executar(() => sireq.cancelarProxima(motivo), 'Requisição cancelada.');
+
+      executar(
+        () => sireq.cancelarProxima(motivo),
+        'Requisição cancelada.'
+      );
     });
 
     document
@@ -429,7 +515,10 @@ export function iniciarTela(sireq: Sireq): void {
   });
 
   document.querySelector('#desfazer')!.addEventListener('click', () => {
-    executar(() => sireq.desfazerUltima(), 'Última operação desfeita.');
+    executar(
+      () => sireq.desfazerUltima(),
+      'Última operação desfeita.'
+    );
   });
 
   document.querySelector('#limpar')!.addEventListener('click', () => {
@@ -442,7 +531,6 @@ export function iniciarTela(sireq: Sireq): void {
     mostrarMensagem('Dados removidos.');
   });
 
-  // Primeira montagem da tela.
   renderizarCampos();
   renderizar();
 }
