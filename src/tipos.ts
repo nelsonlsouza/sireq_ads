@@ -1,5 +1,12 @@
-// Tipos usados em todo o sistema.
-// Este arquivo existe para manter os formatos dos dados em um único lugar.
+/*
+ * TIPOS DO SISTEMA
+ *
+ * Este arquivo não possui regra de negócio.
+ * Ele apenas descreve o formato dos dados que circulam no SIREQ.
+ *
+ * Pense nele como um "contrato":
+ * toda requisição precisa seguir o formato definido aqui.
+ */
 
 export type TipoRequisicao =
   | 'MATERIAL'
@@ -16,6 +23,10 @@ export type StatusRequisicao =
   | 'DEVOLVIDA'
   | 'CANCELADA';
 
+/*
+ * Alguns campos existem apenas para determinados tipos.
+ * Por isso eles usam "?" e são opcionais.
+ */
 export interface DadosEspecificos {
   item?: string;
   quantidade?: number;
@@ -29,6 +40,9 @@ export interface DadosEspecificos {
   descricaoDetalhada?: string;
 }
 
+/*
+ * Representa uma solicitação cadastrada no sistema.
+ */
 export interface Requisicao {
   id: string;
   setor: string;
@@ -43,6 +57,12 @@ export interface Requisicao {
   motivo?: string;
 }
 
+/*
+ * Representa uma decisão registrada no histórico.
+ *
+ * A cópia da requisição anterior permite restaurar o estado
+ * quando o usuário desfaz a última operação.
+ */
 export interface OperacaoHistorico {
   id: string;
   requisicaoId: string;
@@ -51,8 +71,5 @@ export interface OperacaoHistorico {
   novoStatus: StatusRequisicao;
   dataHora: string;
   motivo?: string;
-
-  // Guarda uma cópia da requisição antes da decisão.
-  // Essa cópia é usada quando a última operação precisa ser desfeita.
   requisicaoAnterior: Requisicao;
 }
