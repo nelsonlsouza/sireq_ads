@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SireqService } from '../src/services/SireqService';
+import { Sireq } from '../src/sireq';
 
 class LocalStorageFake {
   private dados = new Map<string, string>();
@@ -38,72 +38,78 @@ const novaRequisicao = (descricao: string) => ({
   }
 });
 
-describe('SireqService', () => {
+describe('Sireq', () => {
   beforeEach(() => storage.clear());
 
   it('gera IDs sequenciais e mantem FIFO', () => {
-    const service = new SireqService();
+    const sireq = new Sireq();
 
-    expect(service.cadastrar(novaRequisicao('A')).id).toBe('REQ-0001');
-    expect(service.cadastrar(novaRequisicao('B')).id).toBe('REQ-0002');
-    expect(service.cadastrar(novaRequisicao('C')).id).toBe('REQ-0003');
-    expect(service.proxima()?.descricao).toBe('A');
+    expect(sireq.cadastrar(novaRequisicao('A')).id).toBe('REQ-0001');
+    expect(sireq.cadastrar(novaRequisicao('B')).id).toBe('REQ-0002');
+    expect(sireq.cadastrar(novaRequisicao('C')).id).toBe('REQ-0003');
+    expect(sireq.proxima()?.descricao).toBe('A');
   });
 
   it('remove somente a primeira requisicao ao iniciar analise', () => {
-    const service = new SireqService();
-    service.cadastrar(novaRequisicao('A'));
-    service.cadastrar(novaRequisicao('B'));
+    const sireq = new Sireq();
 
-    expect(service.iniciarAnalise().descricao).toBe('A');
-    expect(service.proxima()?.descricao).toBe('B');
-    expect(service.quantidade()).toBe(1);
+    sireq.cadastrar(novaRequisicao('A'));
+    sireq.cadastrar(novaRequisicao('B'));
+
+    expect(sireq.iniciarAnalise().descricao).toBe('A');
+    expect(sireq.proxima()?.descricao).toBe('B');
+    expect(sireq.quantidade()).toBe(1);
   });
 
   it('registra uma aprovacao no historico', () => {
-    const service = new SireqService();
-    service.cadastrar(novaRequisicao('A'));
-    service.iniciarAnalise();
-    service.decidir('APROVADA');
+    const sireq = new Sireq();
 
-    expect(service.ultimaOperacao()?.novoStatus).toBe('APROVADA');
-    expect(service.historicoCompleto()).toHaveLength(1);
+    sireq.cadastrar(novaRequisicao('A'));
+    sireq.iniciarAnalise();
+    sireq.decidir('APROVADA');
+
+    expect(sireq.ultimaOperacao()?.novoStatus).toBe('APROVADA');
+    expect(sireq.historicoCompleto()).toHaveLength(1);
   });
 
   it('exige motivo para rejeicao', () => {
-    const service = new SireqService();
-    service.cadastrar(novaRequisicao('A'));
-    service.iniciarAnalise();
+    const sireq = new Sireq();
 
-    expect(() => service.decidir('REJEITADA')).toThrow('Informe o motivo.');
+    sireq.cadastrar(novaRequisicao('A'));
+    sireq.iniciarAnalise();
+
+    expect(() => sireq.decidir('REJEITADA')).toThrow('Informe o motivo.');
   });
 
   it('desfaz a ultima operacao e restaura a requisicao', () => {
-    const service = new SireqService();
-    service.cadastrar(novaRequisicao('A'));
-    service.iniciarAnalise();
-    service.decidir('APROVADA');
-    service.desfazerUltima();
+    const sireq = new Sireq();
 
-    expect(service.proxima()?.descricao).toBe('A');
-    expect(service.historicoCompleto()).toHaveLength(0);
+    sireq.cadastrar(novaRequisicao('A'));
+    sireq.iniciarAnalise();
+    sireq.decidir('APROVADA');
+    sireq.desfazerUltima();
+
+    expect(sireq.proxima()?.descricao).toBe('A');
+    expect(sireq.historicoCompleto()).toHaveLength(0);
   });
 
-  it('mantem os dados apos recriar o servico', () => {
-    const service = new SireqService();
-    service.cadastrar(novaRequisicao('Persistente'));
+  it('mantem os dados apos recriar o sistema', () => {
+    const sireq = new Sireq();
+    sireq.cadastrar(novaRequisicao('Persistente'));
 
-    const recarregado = new SireqService();
+    const recarregado = new Sireq();
+
     expect(recarregado.proxima()?.descricao).toBe('Persistente');
   });
 
   it('trata operacoes invalidas sem quebrar', () => {
-    const service = new SireqService();
+    const sireq = new Sireq();
 
-    expect(() => service.iniciarAnalise()).toThrow(
+    expect(() => sireq.iniciarAnalise()).toThrow(
       'Não há requisições pendentes.'
     );
-    expect(() => service.desfazerUltima()).toThrow(
+
+    expect(() => sireq.desfazerUltima()).toThrow(
       'Não há operação para desfazer.'
     );
   });

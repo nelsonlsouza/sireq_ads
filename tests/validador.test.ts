@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { ValidadorService } from '../src/services/ValidadorService';
-import type { Requisicao } from '../src/models/Requisicao';
+import { Validador } from '../src/validador';
+import type { Requisicao } from '../src/tipos';
 
 type Entrada = Omit<Requisicao, 'id' | 'status' | 'criadoEm'>;
 
@@ -18,23 +18,24 @@ const requisicaoValida: Entrada = {
   }
 };
 
-describe('ValidadorService', () => {
+describe('Validador', () => {
   it('aceita uma requisicao valida', () => {
-    expect(ValidadorService.validar(requisicaoValida)).toEqual([]);
+    expect(Validador.validar(requisicaoValida)).toEqual([]);
   });
 
   it('rejeita justificativa com menos de 20 caracteres', () => {
-    const erros = ValidadorService.validar({
+    const erros = Validador.validar({
       ...requisicaoValida,
       justificativa: 'Curta'
     });
+
     expect(erros).toContain(
       'A justificativa deve ter no mínimo 20 caracteres.'
     );
   });
 
   it('valida os campos obrigatorios de material', () => {
-    const erros = ValidadorService.validar({
+    const erros = Validador.validar({
       ...requisicaoValida,
       dadosEspecificos: {
         item: '',
@@ -42,11 +43,12 @@ describe('ValidadorService', () => {
         valorUnitario: -1
       }
     });
+
     expect(erros).toHaveLength(3);
   });
 
   it('valida os campos obrigatorios de viagem', () => {
-    const erros = ValidadorService.validar({
+    const erros = Validador.validar({
       ...requisicaoValida,
       tipo: 'VIAGEM',
       dadosEspecificos: {
@@ -55,11 +57,12 @@ describe('ValidadorService', () => {
         finalidade: ''
       }
     });
+
     expect(erros).toHaveLength(3);
   });
 
   it('valida os campos obrigatorios de software', () => {
-    const erros = ValidadorService.validar({
+    const erros = Validador.validar({
       ...requisicaoValida,
       tipo: 'SOFTWARE',
       dadosEspecificos: {
@@ -68,6 +71,7 @@ describe('ValidadorService', () => {
         periodo: ''
       }
     });
+
     expect(erros).toHaveLength(3);
   });
 });

@@ -1,34 +1,40 @@
-import { Fila } from '../structures/Fila';
-import { Pilha } from '../structures/Pilha';
-import type { Requisicao, StatusRequisicao } from '../models/Requisicao';
-import type { OperacaoHistorico } from '../models/OperacaoHistorico';
-import { StorageService } from './StorageService';
-import { ValidadorService } from './ValidadorService';
+import { Armazenamento, CHAVES_STORAGE } from './armazenamento';
+import { Fila } from './fila';
+import { Pilha } from './pilha';
+import type {
+  OperacaoHistorico,
+  Requisicao,
+  StatusRequisicao
+} from './tipos';
+import { Validador } from './validador';
 
 type NovaRequisicao = Omit<Requisicao, 'id' | 'status' | 'criadoEm'>;
-type Decisao = Extract<StatusRequisicao, 'APROVADA' | 'REJEITADA' | 'DEVOLVIDA'>;
-
-const STORAGE = {
-  fila: 'sireq_fila',
-  historico: 'sireq_historico',
-  emAnalise: 'sireq_em_analise'
-} as const;
+type Decisao = Extract<
+  StatusRequisicao,
+  'APROVADA' | 'REJEITADA' | 'DEVOLVIDA'
+>;
 
 /**
- * Centraliza as regras de negócio do SIREQ.
- * A interface chama este serviço; o serviço decide como Fila, Pilha e persistência serão usadas.
+ * Coração do SIREQ.
+ *
+ * Este arquivo contém as REGRAS DE NEGÓCIO:
+ * cadastrar -> colocar na fila -> analisar -> decidir -> guardar no histórico.
+ *
+ * Ele não cria HTML e não acessa diretamente o localStorage.
  */
-export class SireqService {
+export class Sireq {
   private fila = new Fila<Requisicao>();
   private historico = new Pilha<OperacaoHistorico>();
   private emAnalise: Requisicao | null = null;
 
   constructor() {
-    this.carregar();
+    this.carregarDados();
   }
 
+  // -------------------- CADASTRO --------------------
+
   cadastrar(dados: NovaRequisicao): Requisicao {
-    const erros = ValidadorService.validar(dados);
+    const erros = Validador.validar(dados);
 
     if (erros.length > 0) {
       throw new Error(erros.join(' '));
@@ -36,16 +42,19 @@ export class SireqService {
 
     const requisicao: Requisicao = {
       ...dados,
-      id: this.proximoId(),
+      id: this.gerarProximoId(),
       status: 'PENDENTE',
       criadoEm: new Date().toISOString()
     };
 
+    // Toda nova requisição entra no FINAL da fila.
     this.fila.enfileirar(requisicao);
-    this.salvar();
+    this.salvarDados();
 
     return requisicao;
   }
+
+  // -------------------- CONSULTAS --------------------
 
   proxima(): Requisicao | undefined {
     return this.fila.frente();
@@ -71,12 +80,14 @@ export class SireqService {
     return this.historico.consultarTopo();
   }
 
+  // -------------------- ANÁLISE --------------------
+
   iniciarAnalise(): Requisicao {
     if (this.emAnalise) {
       return this.emAnalise;
     }
 
-    // desenfileirar() garante que somente o primeiro elemento da FIFO avance.
+    // FIFO: sempre retiramos o PRIMEIRO elemento da fila.
     const requisicao = this.fila.desenfileirar();
 
     if (!requisicao) {
@@ -85,7 +96,7 @@ export class SireqService {
 
     requisicao.status = 'EM_ANALISE';
     this.emAnalise = requisicao;
-    this.salvar();
+    this.salvarDados();
 
     return requisicao;
   }
@@ -95,18 +106,22 @@ export class SireqService {
       throw new Error('Nenhuma requisição em análise.');
     }
 
-    this.validarMotivoDaDecisao(status, motivo);
+    this.validarMotivo(status, motivo);
 
-    const anterior = structuredClone(this.emAnalise);
-    const operacao = this.criarOperacao(anterior, status, motivo);
+    // Guardamos como a requisição estava ANTES da decisão.
+    // Essa cópia permite desfazer depois.
+    const antesDaDecisao = structuredClone(this.emAnalise);
 
     this.emAnalise.status = status;
     this.emAnalise.motivo = motivo || undefined;
 
-    // A última decisão fica no topo da pilha para permitir LIFO/desfazer.
-    this.historico.empilhar(operacao);
+    // LIFO: a decisão mais recente vai para o TOPO da pilha.
+    this.historico.empilhar(
+      this.criarOperacao(antesDaDecisao, status, motivo)
+    );
+
     this.emAnalise = null;
-    this.salvar();
+    this.salvarDados();
   }
 
   cancelarProxima(motivo: string): void {
@@ -120,50 +135,59 @@ export class SireqService {
       throw new Error('Não há requisição pendente.');
     }
 
-    const anterior = structuredClone(requisicao);
+    const antesDoCancelamento = structuredClone(requisicao);
+
     requisicao.status = 'CANCELADA';
     requisicao.motivo = motivo;
 
     this.historico.empilhar(
-      this.criarOperacao(anterior, 'CANCELADA', motivo)
+      this.criarOperacao(antesDoCancelamento, 'CANCELADA', motivo)
     );
 
-    this.salvar();
+    this.salvarDados();
   }
+
+  // -------------------- DESFAZER --------------------
 
   desfazerUltima(): void {
     if (this.emAnalise) {
       throw new Error('Finalize a análise atual antes de desfazer.');
     }
 
-    // desempilhar() remove exatamente a operação mais recente (LIFO).
-    const operacao = this.historico.desempilhar();
+    // LIFO: desempilhar remove a decisão MAIS RECENTE.
+    const ultimaOperacao = this.historico.desempilhar();
 
-    if (!operacao) {
+    if (!ultimaOperacao) {
       throw new Error('Não há operação para desfazer.');
     }
 
-    const restaurada: Requisicao = {
-      ...operacao.requisicaoAnterior,
+    const requisicaoRestaurada: Requisicao = {
+      ...ultimaOperacao.requisicaoAnterior,
       status: 'PENDENTE',
       motivo: undefined
     };
 
-    this.fila.inserirNoInicio(restaurada);
-    this.salvar();
+    // A requisição volta ao início porque era a próxima em tratamento.
+    this.fila.inserirNoInicio(requisicaoRestaurada);
+    this.salvarDados();
   }
+
+  // -------------------- LIMPEZA --------------------
 
   limpar(): void {
     this.fila.carregar([]);
     this.historico.carregar([]);
     this.emAnalise = null;
-    StorageService.limpar();
+    Armazenamento.limpar();
   }
 
-  private validarMotivoDaDecisao(status: Decisao, motivo: string): void {
-    const exigeMotivo = status === 'REJEITADA' || status === 'DEVOLVIDA';
+  // -------------------- MÉTODOS INTERNOS --------------------
 
-    if (exigeMotivo && !motivo.trim()) {
+  private validarMotivo(status: Decisao, motivo: string): void {
+    const precisaDeMotivo =
+      status === 'REJEITADA' || status === 'DEVOLVIDA';
+
+    if (precisaDeMotivo && !motivo.trim()) {
       throw new Error('Informe o motivo.');
     }
   }
@@ -185,41 +209,46 @@ export class SireqService {
     };
   }
 
-  private proximoId(): string {
-    const ids = [
+  private gerarProximoId(): string {
+    const idsExistentes = [
       ...this.fila.listar().map((requisicao) => requisicao.id),
       ...this.historico.listar().map((operacao) => operacao.requisicaoId),
       ...(this.emAnalise ? [this.emAnalise.id] : [])
     ];
 
-    const maiorId = ids.reduce((maior, id) => {
+    const maiorNumero = idsExistentes.reduce((maior, id) => {
       const numero = Number(id.replace('REQ-', ''));
       return Number.isFinite(numero) ? Math.max(maior, numero) : maior;
     }, 0);
 
-    return `REQ-${String(maiorId + 1).padStart(4, '0')}`;
+    return `REQ-${String(maiorNumero + 1).padStart(4, '0')}`;
   }
 
-  private salvar(): void {
-    StorageService.salvar(STORAGE.fila, this.fila.listar());
-    StorageService.salvar(
-      STORAGE.historico,
+  private salvarDados(): void {
+    Armazenamento.salvar(CHAVES_STORAGE.fila, this.fila.listar());
+
+    Armazenamento.salvar(
+      CHAVES_STORAGE.historico,
       this.historico.listarOrdemInterna()
     );
-    StorageService.salvar(STORAGE.emAnalise, this.emAnalise);
+
+    Armazenamento.salvar(CHAVES_STORAGE.emAnalise, this.emAnalise);
   }
 
-  private carregar(): void {
+  private carregarDados(): void {
     this.fila.carregar(
-      StorageService.carregar<Requisicao[]>(STORAGE.fila, [])
+      Armazenamento.carregar<Requisicao[]>(CHAVES_STORAGE.fila, [])
     );
 
     this.historico.carregar(
-      StorageService.carregar<OperacaoHistorico[]>(STORAGE.historico, [])
+      Armazenamento.carregar<OperacaoHistorico[]>(
+        CHAVES_STORAGE.historico,
+        []
+      )
     );
 
-    this.emAnalise = StorageService.carregar<Requisicao | null>(
-      STORAGE.emAnalise,
+    this.emAnalise = Armazenamento.carregar<Requisicao | null>(
+      CHAVES_STORAGE.emAnalise,
       null
     );
   }
