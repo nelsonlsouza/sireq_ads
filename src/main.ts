@@ -2,16 +2,7 @@ import './style.css';
 import { Sireq } from './sireq';
 import { iniciarTela } from './tela';
 
-/*
- * PONTO DE ENTRADA DO SISTEMA
- *
- * Este arquivo é propositalmente pequeno.
- * Ele faz apenas duas coisas:
- * 1. cria o SIREQ;
- * 2. entrega o SIREQ para a tela.
- *
- * Fluxo:
- * main.ts -> tela.ts -> sireq.ts
- */
+// Aqui começa a aplicação.
+// Criamos o sistema e passamos a instância para a tela.
 const sireq = new Sireq();
 iniciarTela(sireq);
