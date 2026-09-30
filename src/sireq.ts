@@ -14,14 +14,7 @@ type Decisao = Extract<
   'APROVADA' | 'REJEITADA' | 'DEVOLVIDA'
 >;
 
-/**
- * Coração do SIREQ.
- *
- * Este arquivo contém as REGRAS DE NEGÓCIO:
- * cadastrar -> colocar na fila -> analisar -> decidir -> guardar no histórico.
- *
- * Ele não cria HTML e não acessa diretamente o localStorage.
- */
+// Reúne as regras principais do sistema.
 export class Sireq {
   private fila = new Fila<Requisicao>();
   private historico = new Pilha<OperacaoHistorico>();
@@ -30,8 +23,6 @@ export class Sireq {
   constructor() {
     this.carregarDados();
   }
-
-  // -------------------- CADASTRO --------------------
 
   cadastrar(dados: NovaRequisicao): Requisicao {
     const erros = Validador.validar(dados);
@@ -47,14 +38,12 @@ export class Sireq {
       criadoEm: new Date().toISOString()
     };
 
-    // Toda nova requisição entra no FINAL da fila.
+    // Toda nova requisição entra no final da fila.
     this.fila.enfileirar(requisicao);
     this.salvarDados();
 
     return requisicao;
   }
-
-  // -------------------- CONSULTAS --------------------
 
   proxima(): Requisicao | undefined {
     return this.fila.frente();
@@ -80,14 +69,12 @@ export class Sireq {
     return this.historico.consultarTopo();
   }
 
-  // -------------------- ANÁLISE --------------------
-
   iniciarAnalise(): Requisicao {
     if (this.emAnalise) {
       return this.emAnalise;
     }
 
-    // FIFO: sempre retiramos o PRIMEIRO elemento da fila.
+    // A análise sempre começa pela primeira requisição da fila.
     const requisicao = this.fila.desenfileirar();
 
     if (!requisicao) {
@@ -108,14 +95,13 @@ export class Sireq {
 
     this.validarMotivo(status, motivo);
 
-    // Guardamos como a requisição estava ANTES da decisão.
-    // Essa cópia permite desfazer depois.
+    // Salvamos uma cópia para conseguir desfazer a decisão depois.
     const antesDaDecisao = structuredClone(this.emAnalise);
 
     this.emAnalise.status = status;
     this.emAnalise.motivo = motivo || undefined;
 
-    // LIFO: a decisão mais recente vai para o TOPO da pilha.
+    // A decisão mais recente fica no topo da pilha.
     this.historico.empilhar(
       this.criarOperacao(antesDaDecisao, status, motivo)
     );
@@ -147,14 +133,12 @@ export class Sireq {
     this.salvarDados();
   }
 
-  // -------------------- DESFAZER --------------------
-
   desfazerUltima(): void {
     if (this.emAnalise) {
       throw new Error('Finalize a análise atual antes de desfazer.');
     }
 
-    // LIFO: desempilhar remove a decisão MAIS RECENTE.
+    // A pilha devolve primeiro a operação mais recente.
     const ultimaOperacao = this.historico.desempilhar();
 
     if (!ultimaOperacao) {
@@ -167,12 +151,9 @@ export class Sireq {
       motivo: undefined
     };
 
-    // A requisição volta ao início porque era a próxima em tratamento.
     this.fila.inserirNoInicio(requisicaoRestaurada);
     this.salvarDados();
   }
-
-  // -------------------- LIMPEZA --------------------
 
   limpar(): void {
     this.fila.carregar([]);
@@ -180,8 +161,6 @@ export class Sireq {
     this.emAnalise = null;
     Armazenamento.limpar();
   }
-
-  // -------------------- MÉTODOS INTERNOS --------------------
 
   private validarMotivo(status: Decisao, motivo: string): void {
     const precisaDeMotivo =
