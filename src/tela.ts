@@ -290,21 +290,27 @@ export function iniciarTela(sireq: Sireq): void {
   function preencherFormulario(requisicao: Requisicao): void {
     requisicaoEmCorrecao = requisicao;
 
-    formulario.elements.namedItem('setor')!.value = requisicao.setor;
-    formulario.elements.namedItem('requisitante')!.value = requisicao.requisitante;
-    tipoSelect.value = requisicao.tipo;
-    formulario.elements.namedItem('valor')!.value = String(requisicao.valor);
-    formulario.elements.namedItem('descricao')!.value = requisicao.descricao;
-    formulario.elements.namedItem('justificativa')!.value = requisicao.justificativa;
+    const preencher = (nome: string, valor: string | number | undefined) => {
+      const campo = formulario.elements.namedItem(nome) as
+        | HTMLInputElement
+        | HTMLTextAreaElement
+        | null;
 
+      if (campo) {
+        campo.value = valor === undefined ? '' : String(valor);
+      }
+    };
+
+    preencher('setor', requisicao.setor);
+    preencher('requisitante', requisicao.requisitante);
+    preencher('valor', requisicao.valor);
+    preencher('descricao', requisicao.descricao);
+    preencher('justificativa', requisicao.justificativa);
+
+    tipoSelect.value = requisicao.tipo;
     renderizarCampos();
 
     const dados = requisicao.dadosEspecificos;
-
-    const preencher = (nome: string, valor: string | number | undefined) => {
-      const campo = formulario.elements.namedItem(nome) as HTMLInputElement | HTMLTextAreaElement | null;
-      if (campo) campo.value = valor === undefined ? '' : String(valor);
-    };
 
     preencher('item', dados.item);
     preencher('quantidade', dados.quantidade);
