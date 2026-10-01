@@ -102,6 +102,38 @@ describe('Sireq', () => {
     expect(recarregado.proxima()?.descricao).toBe('Persistente');
   });
 
+  it('reenvia uma requisicao devolvida para o final da fila', () => {
+    const sireq = new Sireq();
+
+    const original = sireq.cadastrar(novaRequisicao('A'));
+    sireq.cadastrar(novaRequisicao('B'));
+
+    sireq.iniciarAnalise();
+    sireq.decidir('DEVOLVIDA', 'Corrigir descrição');
+
+    const corrigida = sireq.reenviar(original.id, {
+      ...novaRequisicao('A corrigida'),
+      valor: 150
+    });
+
+    expect(corrigida.id).toBe(original.id);
+    expect(corrigida.criadoEm).toBe(original.criadoEm);
+    expect(corrigida.status).toBe('PENDENTE');
+    expect(sireq.pendentes().map((r) => r.descricao)).toEqual([
+      'B',
+      'A corrigida'
+    ]);
+  });
+
+  it('nao permite reenviar uma requisicao que nao foi devolvida', () => {
+    const sireq = new Sireq();
+    const original = sireq.cadastrar(novaRequisicao('A'));
+
+    expect(() =>
+      sireq.reenviar(original.id, novaRequisicao('A corrigida'))
+    ).toThrow('Esta requisição não está disponível para reenvio.');
+  });
+
   it('trata operacoes invalidas sem quebrar', () => {
     const sireq = new Sireq();
 
