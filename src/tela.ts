@@ -42,8 +42,8 @@ const HTML_PRINCIPAL = `
     <article class="card">
       <div class="card-head">
         <div>
-          <h2>Nova requisição</h2>
-          <p>Preencha os dados da solicitação.</p>
+          <h2 id="tituloForm">Nova requisição</h2>
+          <p id="subtituloForm">Preencha os dados da solicitação.</p>
         </div>
       </div>
 
@@ -88,7 +88,7 @@ const HTML_PRINCIPAL = `
           <textarea name="justificativa" minlength="20" required></textarea>
         </label>
 
-        <button type="submit">Cadastrar requisição</button>
+        <button id="botaoForm" type="submit">Cadastrar requisição</button>
       </form>
     </article>
 
@@ -253,6 +253,7 @@ export function iniciarTela(sireq: Sireq): void {
 
   const formulario = document.querySelector<HTMLFormElement>('#form')!;
   const tipoSelect = document.querySelector<HTMLSelectElement>('#tipo')!;
+  let requisicaoEmCorrecao: Requisicao | null = null;
 
   function mostrarMensagem(mensagem: string, erro = false): void {
     const elemento = document.querySelector('#mensagem')!;
@@ -265,16 +266,18 @@ export function iniciarTela(sireq: Sireq): void {
     }, 3000);
   }
 
-  function executar(acao: () => unknown, mensagem: string): void {
+  function executar(acao: () => unknown, mensagem: string): boolean {
     try {
       acao();
       mostrarMensagem(mensagem);
       renderizar();
+      return true;
     } catch (erro) {
       mostrarMensagem(
         erro instanceof Error ? erro.message : 'Erro inesperado.',
         true
       );
+      return false;
     }
   }
 
@@ -282,6 +285,58 @@ export function iniciarTela(sireq: Sireq): void {
     const tipo = tipoSelect.value as TipoRequisicao;
     const campos = document.querySelector<HTMLDivElement>('#camposEspecificos')!;
     campos.innerHTML = CAMPOS_POR_TIPO[tipo];
+  }
+
+  function preencherFormulario(requisicao: Requisicao): void {
+    requisicaoEmCorrecao = requisicao;
+
+    formulario.elements.namedItem('setor')!.value = requisicao.setor;
+    formulario.elements.namedItem('requisitante')!.value = requisicao.requisitante;
+    tipoSelect.value = requisicao.tipo;
+    formulario.elements.namedItem('valor')!.value = String(requisicao.valor);
+    formulario.elements.namedItem('descricao')!.value = requisicao.descricao;
+    formulario.elements.namedItem('justificativa')!.value = requisicao.justificativa;
+
+    renderizarCampos();
+
+    const dados = requisicao.dadosEspecificos;
+
+    const preencher = (nome: string, valor: string | number | undefined) => {
+      const campo = formulario.elements.namedItem(nome) as HTMLInputElement | HTMLTextAreaElement | null;
+      if (campo) campo.value = valor === undefined ? '' : String(valor);
+    };
+
+    preencher('item', dados.item);
+    preencher('quantidade', dados.quantidade);
+    preencher('valorUnitario', dados.valorUnitario);
+    preencher('fornecedor', dados.fornecedor);
+    preencher('periodo', dados.periodo);
+    preencher('destino', dados.destino);
+    preencher('finalidade', dados.finalidade);
+    preencher('software', dados.software);
+    preencher('licencas', dados.licencas);
+    preencher('descricaoDetalhada', dados.descricaoDetalhada);
+
+    document.querySelector('#tituloForm')!.textContent =
+      `Corrigir ${requisicao.id}`;
+    document.querySelector('#subtituloForm')!.textContent =
+      'Ajuste os dados e reenvie a requisição para o final da fila.';
+    document.querySelector<HTMLButtonElement>('#botaoForm')!.textContent =
+      'Reenviar requisição';
+
+    formulario.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function encerrarCorrecao(): void {
+    requisicaoEmCorrecao = null;
+    formulario.reset();
+    renderizarCampos();
+
+    document.querySelector('#tituloForm')!.textContent = 'Nova requisição';
+    document.querySelector('#subtituloForm')!.textContent =
+      'Preencha os dados da solicitação.';
+    document.querySelector<HTMLButtonElement>('#botaoForm')!.textContent =
+      'Cadastrar requisição';
   }
 
   function renderizar(): void {
@@ -445,6 +500,20 @@ export function iniciarTela(sireq: Sireq): void {
                 </span>
                 <strong>${moeda(requisicao.valor)}</strong>
               </div>
+
+              ${
+                operacao.novoStatus === 'DEVOLVIDA' &&
+                sireq.podeReenviar(operacao.requisicaoId)
+                  ? `<div class="actions">
+                       <button
+                         class="secondary"
+                         data-corrigir="${textoSeguro(operacao.requisicaoId)}"
+                       >
+                         Corrigir e reenviar
+                       </button>
+                     </div>`
+                  : ''
+              }
             </div>
           </div>`;
       })
@@ -486,6 +555,25 @@ export function iniciarTela(sireq: Sireq): void {
           );
         });
       });
+
+    document
+      .querySelectorAll<HTMLButtonElement>('[data-corrigir]')
+      .forEach((botao) => {
+        botao.addEventListener('click', () => {
+          const id = botao.dataset.corrigir!;
+          const operacao = sireq
+            .historicoCompleto()
+            .find(
+              (item) =>
+                item.requisicaoId === id &&
+                item.novoStatus === 'DEVOLVIDA'
+            );
+
+          if (operacao) {
+            preencherFormulario(operacao.requisicaoAnterior);
+          }
+        });
+      });
   }
 
   tipoSelect.addEventListener('change', renderizarCampos);
@@ -496,22 +584,29 @@ export function iniciarTela(sireq: Sireq): void {
     const formData = new FormData(formulario);
     const tipo = String(formData.get('tipo')) as TipoRequisicao;
 
-    executar(
-      () =>
-        sireq.cadastrar({
-          setor: String(formData.get('setor')),
-          requisitante: String(formData.get('requisitante')),
-          tipo,
-          descricao: String(formData.get('descricao')),
-          justificativa: String(formData.get('justificativa')),
-          valor: Number(formData.get('valor')),
-          dadosEspecificos: lerDadosEspecificos(formData)
-        }),
-      'Requisição cadastrada.'
-    );
+    const dados = {
+      setor: String(formData.get('setor')),
+      requisitante: String(formData.get('requisitante')),
+      tipo,
+      descricao: String(formData.get('descricao')),
+      justificativa: String(formData.get('justificativa')),
+      valor: Number(formData.get('valor')),
+      dadosEspecificos: lerDadosEspecificos(formData)
+    };
 
-    formulario.reset();
-    renderizarCampos();
+    const sucesso = requisicaoEmCorrecao
+      ? executar(
+          () => sireq.reenviar(requisicaoEmCorrecao!.id, dados),
+          'Requisição corrigida e reenviada para o final da fila.'
+        )
+      : executar(
+          () => sireq.cadastrar(dados),
+          'Requisição cadastrada.'
+        );
+
+    if (sucesso) {
+      encerrarCorrecao();
+    }
   });
 
   document.querySelector('#desfazer')!.addEventListener('click', () => {
