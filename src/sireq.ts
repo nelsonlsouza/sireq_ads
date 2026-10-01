@@ -45,6 +45,58 @@ export class Sireq {
     return requisicao;
   }
 
+  reenviar(id: string, dados: NovaRequisicao): Requisicao {
+    const erros = Validador.validar(dados);
+
+    if (erros.length > 0) {
+      throw new Error(erros.join(' '));
+    }
+
+    if (!this.podeReenviar(id)) {
+      throw new Error('Esta requisição não está disponível para reenvio.');
+    }
+
+    const ultimaOperacao = this.historico
+      .listar()
+      .find((operacao) => operacao.requisicaoId === id);
+
+    if (!ultimaOperacao) {
+      throw new Error('Requisição devolvida não encontrada.');
+    }
+
+    const requisicaoCorrigida: Requisicao = {
+      ...dados,
+      id,
+      status: 'PENDENTE',
+      criadoEm: ultimaOperacao.requisicaoAnterior.criadoEm,
+      motivo: undefined
+    };
+
+    // Depois da correção, a requisição volta para o final da fila.
+    this.fila.enfileirar(requisicaoCorrigida);
+    this.salvarDados();
+
+    return requisicaoCorrigida;
+  }
+
+  podeReenviar(id: string): boolean {
+    const ultimaOperacao = this.historico
+      .listar()
+      .find((operacao) => operacao.requisicaoId === id);
+
+    const estaNaFila = this.fila
+      .listar()
+      .some((requisicao) => requisicao.id === id);
+
+    const estaEmAnalise = this.emAnalise?.id === id;
+
+    return (
+      ultimaOperacao?.novoStatus === 'DEVOLVIDA' &&
+      !estaNaFila &&
+      !estaEmAnalise
+    );
+  }
+
   proxima(): Requisicao | undefined {
     return this.fila.frente();
   }
