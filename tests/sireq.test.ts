@@ -27,6 +27,51 @@ beforeEach(() => {
 });
 
 describe('validação e fluxo SIREQ', () => {
+  it('mantém Software de R$ 50.000 após requisições anteriores na fila FIFO', () => {
+    const s = new SireqService();
+    const material = s.cadastrar(dados('Material anterior'));
+    const software = s.cadastrar({
+      ...dados('Licenças corporativas'),
+      tipo: 'SOFTWARE',
+      valor: 50000,
+      dadosEspecificos: { software: 'Editor', licencas: 25, periodo: '12 meses' },
+    });
+    expect(s.pendentes().map((r) => r.id)).toEqual([material.id, software.id]);
+    expect(s.proxima()?.id).toBe(material.id);
+    expect(s.quantidade()).toBe(2);
+    s.iniciarAnalise();
+    expect(s.proxima()?.id).toBe(software.id);
+    expect(s.buscarPorId(software.id)?.dadosEspecificos.licencas).toBe(25);
+  });
+  it.each([
+    [{ software: '', licencas: 2, periodo: '12 meses' }, 'nome do software'],
+    [{ software: 'Editor', licencas: 0, periodo: '12 meses' }, 'quantidade de licenças'],
+    [{ software: 'Editor', licencas: 1.5, periodo: '12 meses' }, 'quantidade de licenças'],
+    [{ software: 'Editor', licencas: 2, periodo: '' }, 'período da licença'],
+  ])('rejeita Software inválido sem alterar fila nem histórico: %j', (especificos, erro) => {
+    const s = new SireqService();
+    const entrada = { ...dados('Licença'), tipo: 'SOFTWARE' as const, dadosEspecificos: especificos };
+    expect(() => s.cadastrar(entrada)).toThrow(erro);
+    expect(s.quantidade()).toBe(0);
+    expect(s.historicoCompleto()).toEqual([]);
+  });
+  it('revalida Software devolvido antes do reenvio e preserva ID e ordem', () => {
+    const s = new SireqService();
+    const entrada = { ...dados('Licença'), tipo: 'SOFTWARE' as const,
+      dadosEspecificos: { software: 'Editor', licencas: 2, periodo: '12 meses' } };
+    const original = s.cadastrar(entrada);
+    s.iniciarAnalise();
+    s.decidir('DEVOLVIDA', 'Corrigir licenças');
+    const seguinte = s.cadastrar(dados('Material seguinte'));
+    expect(() => s.corrigirEReenviar(original.id, { ...entrada,
+      dadosEspecificos: { ...entrada.dadosEspecificos, licencas: 0 } })).toThrow('licenças');
+    expect(s.devolvidas().map((r) => r.id)).toEqual([original.id]);
+    const corrigida = s.corrigirEReenviar(original.id, { ...entrada,
+      dadosEspecificos: { ...entrada.dadosEspecificos, licencas: 3 } });
+    expect(corrigida.id).toBe(original.id);
+    expect(corrigida.criadoEm).toBe(original.criadoEm);
+    expect(s.pendentes().map((r) => r.id)).toEqual([seguinte.id, original.id]);
+  });
   it.each([
     ['SERVICO', { fornecedor: 'Empresa', periodo: '12 meses' }, 'fornecedor'],
     ['VIAGEM', { destino: 'Manaus', periodo: '2 dias', finalidade: 'Treinamento' }, 'destino'],
